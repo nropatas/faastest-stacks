@@ -1,9 +1,7 @@
 package knativestack
 
 import (
-	"fmt"
 	"io/ioutil"
-	"os"
 	"path/filepath"
 
 	"github.com/nropatas/faastest-stacks/utils"
@@ -12,7 +10,6 @@ import (
 
 const (
 	stackFile    = "stack.yaml"
-	dockerfile   = "Dockerfile"
 	kserviceFile = "service.yml"
 )
 
@@ -82,21 +79,6 @@ func New(path string) (*KnativeStack, error) {
 
 func (s *KnativeStack) DeployStack() error {
 	for _, function := range s.Functions {
-		// Build and push a docker image
-		tag := fmt.Sprintf("%s/%s", os.Getenv("DOCKER_USERNAME"), function.Name)
-
-		_, _, err := utils.ExecCmd([]string{}, filepath.Join(s.path, function.dirName),
-			"docker", "build", "-t", tag, ".")
-		if err != nil {
-			return err
-		}
-
-		_, _, err = utils.ExecCmd([]string{}, filepath.Join(s.path, function.dirName),
-			"docker", "push", tag)
-		if err != nil {
-			return err
-		}
-
 		// Deploy the function
 		_, _, err = utils.ExecCmd([]string{"KUBECONFIG=\"~/.kube/kubeconfig_knative\""}, filepath.Join(s.path, function.dirName),
 			"kubectl", "apply", "-f", kserviceFile)
@@ -108,7 +90,6 @@ func (s *KnativeStack) DeployStack() error {
 	return nil
 }
 
-// TODO (Sam): Remove docker images?
 func (s *KnativeStack) RemoveStack() error {
 	for _, function := range s.Functions {
 		_, _, err := utils.ExecCmd([]string{"KUBECONFIG=\"~/.kube/kubeconfig_knative\""}, filepath.Join(s.path, function.dirName),
