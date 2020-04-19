@@ -80,7 +80,7 @@ func New(path string) (*KnativeStack, error) {
 func (s *KnativeStack) DeployStack() error {
 	for _, function := range s.Functions {
 		// Deploy the function
-		_, _, err = utils.ExecCmd([]string{"KUBECONFIG=\"~/.kube/kubeconfig_knative\""}, filepath.Join(s.path, function.dirName),
+		_, _, err := utils.ExecCmd([]string{"KUBECONFIG=\"~/.kube/kubeconfig_knative\""}, filepath.Join(s.path, function.dirName),
 			"kubectl", "apply", "-f", kserviceFile)
 		if err != nil {
 			return err
