@@ -84,7 +84,7 @@ func (s *KnativeStack) DeployStack() error {
 		// _, _, err := utils.ExecCmd([]string{"KUBECONFIG=\"/app/kubeconfigs/kubeconfig_knative\""}, filepath.Join(s.path, function.dirName),
 		// 	"kubectl", "apply", "-f", kserviceFile)
 		_, _, err := utils.ExecCmd([]string{}, filepath.Join(s.path, function.dirName),
-			"/bin/sh", "-c", fmt.Sprintf("\"kubectl apply -f %s --kubeconfig /app/kubeconfigs/kubeconfig_knative\"", kserviceFile))
+			"/bin/sh", "-c", fmt.Sprintf("kubectl apply -f %s --kubeconfig /app/kubeconfigs/kubeconfig_knative", kserviceFile))
 		if err != nil {
 			return err
 		}
@@ -98,7 +98,7 @@ func (s *KnativeStack) RemoveStack() error {
 		// _, _, err := utils.ExecCmd([]string{"KUBECONFIG=\"/app/kubeconfigs/kubeconfig_knative\""}, filepath.Join(s.path, function.dirName),
 		// 	"kubectl", "delete", "-f", kserviceFile)
 		_, _, err := utils.ExecCmd([]string{}, filepath.Join(s.path, function.dirName),
-			"/bin/sh", "-c", fmt.Sprintf("\"kubectl delete -f %s --kubeconfig /app/kubeconfigs/kubeconfig_knative\"", kserviceFile))
+			"/bin/sh", "-c", fmt.Sprintf("kubectl delete -f %s --kubeconfig /app/kubeconfigs/kubeconfig_knative", kserviceFile))
 		if err != nil {
 			return err
 		}
