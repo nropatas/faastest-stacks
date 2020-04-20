@@ -1,6 +1,7 @@
 package knativestack
 
 import (
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
 
@@ -80,8 +81,10 @@ func New(path string) (*KnativeStack, error) {
 func (s *KnativeStack) DeployStack() error {
 	for _, function := range s.Functions {
 		// Deploy the function
-		_, _, err := utils.ExecCmd([]string{"KUBECONFIG=\"/app/kubeconfigs/kubeconfig_knative\""}, filepath.Join(s.path, function.dirName),
-			"kubectl", "apply", "-f", kserviceFile)
+		// _, _, err := utils.ExecCmd([]string{"KUBECONFIG=\"/app/kubeconfigs/kubeconfig_knative\""}, filepath.Join(s.path, function.dirName),
+		// 	"kubectl", "apply", "-f", kserviceFile)
+		_, _, err := utils.ExecCmd([]string{}, filepath.Join(s.path, function.dirName),
+			"/bin/sh", "-c", fmt.Sprintf("\"kubectl apply -f %s --kubeconfig /app/kubeconfigs/kubeconfig_knative\"", kserviceFile))
 		if err != nil {
 			return err
 		}
@@ -92,8 +95,10 @@ func (s *KnativeStack) DeployStack() error {
 
 func (s *KnativeStack) RemoveStack() error {
 	for _, function := range s.Functions {
-		_, _, err := utils.ExecCmd([]string{"KUBECONFIG=\"/app/kubeconfigs/kubeconfig_knative\""}, filepath.Join(s.path, function.dirName),
-			"kubectl", "delete", "-f", kserviceFile)
+		// _, _, err := utils.ExecCmd([]string{"KUBECONFIG=\"/app/kubeconfigs/kubeconfig_knative\""}, filepath.Join(s.path, function.dirName),
+		// 	"kubectl", "delete", "-f", kserviceFile)
+		_, _, err := utils.ExecCmd([]string{}, filepath.Join(s.path, function.dirName),
+			"/bin/sh", "-c", fmt.Sprintf("\"kubectl delete -f %s --kubeconfig /app/kubeconfigs/kubeconfig_knative\"", kserviceFile))
 		if err != nil {
 			return err
 		}
