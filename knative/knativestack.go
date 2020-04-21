@@ -3,7 +3,6 @@ package knativestack
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"path/filepath"
 	"strings"
 	"time"
@@ -100,7 +99,6 @@ func (s *KnativeStack) DeployStack() error {
 			if err != nil {
 				return err
 			}
-			log.Printf("%s stdout: %s", function.Name, stdout)
 		}
 	}
 
