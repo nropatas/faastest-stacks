@@ -92,7 +92,7 @@ func (s *KnativeStack) DeployStack() error {
 
 		// Check if the function is ready
 		stdout := ""
-		for strings.Compare(stdout, "True") == 0 {
+		for strings.Compare(stdout, "True") != 0 {
 			time.Sleep(5 * time.Second)
 
 			stdout, _, err = utils.ExecCmd([]string{}, s.path,
