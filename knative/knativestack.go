@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"time"
 
 	"github.com/nropatas/faastest-stacks/utils"
 	"gopkg.in/yaml.v2"
@@ -89,6 +90,8 @@ func (s *KnativeStack) DeployStack() error {
 			return err
 		}
 	}
+
+	time.Sleep(5 * time.Second)
 
 	return nil
 }
