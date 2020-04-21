@@ -104,8 +104,6 @@ func (s *KnativeStack) DeployStack() error {
 		}
 	}
 
-	time.Sleep(5 * time.Second)
-
 	return nil
 }
 
