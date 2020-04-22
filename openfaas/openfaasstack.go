@@ -82,12 +82,6 @@ func New(path string, gatewayUrl string) (*OpenFaaSStack, error) {
 
 func (s *OpenFaaSStack) DeployStack() error {
 	_, _, err := utils.ExecCmd([]string{}, s.path,
-		"faas-cli", "template", "pull")
-	if err != nil {
-		return err
-	}
-
-	_, _, err = utils.ExecCmd([]string{}, s.path,
 		"faas-cli", "deploy", "-g", s.gatewayUrl, "-f", serviceFile)
 	if err != nil {
 		return err
