@@ -87,7 +87,6 @@ func (s *OpenFaaSStack) DeployStack() error {
 		return err
 	}
 
-	// TODO (Sam): Check status
 	time.Sleep(5 * time.Second)
 
 	return nil
