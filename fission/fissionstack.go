@@ -20,24 +20,28 @@ type Function struct {
 	Description string `yaml:"description"`
 	Runtime     string
 	MemorySize  string `yaml:"maxmemory"`
-	minmemory   string `yaml:"minmemory"`
-	mincpu      string `yaml:"mincpu"`
-	maxcpu      string `yaml:"maxcpu"`
-	minscale    string `yaml:"minscale"`
-	maxscale    string `yaml:"maxscale"`
-	targetcpu   string `yaml:"targetcpu"`
 }
 
-type Functions map[string]Function
+type FunctionSpec struct {
+	Function  `yaml:",inline"`
+	Minmemory string `yaml:"minmemory"`
+	Mincpu    string `yaml:"mincpu"`
+	Maxcpu    string `yaml:"maxcpu"`
+	Minscale  string `yaml:"minscale"`
+	Maxscale  string `yaml:"maxscale"`
+	Targetcpu string `yaml:"targetcpu"`
+}
+
+type Functions map[string]FunctionSpec
 
 type Environment struct {
-	name  string `yaml:"name"`
-	image string `yaml:"image"`
+	Name  string `yaml:"name"`
+	Image string `yaml:"image"`
 }
 
 type Spec struct {
-	env       Environment `yaml:"env"`
-	functions Functions
+	Env Environment `yaml:"env"`
+	Functions
 }
 
 type StackInfo struct {
@@ -47,10 +51,10 @@ type StackInfo struct {
 }
 
 type FissionStack struct {
-	stackInfo   StackInfo
-	path        string
-	environment Environment
-	Functions   []*Function
+	stackInfo StackInfo
+	path      string
+	spec      Spec
+	Functions []*Function
 }
 
 func New(path string) (*FissionStack, error) {
@@ -76,10 +80,10 @@ func New(path string) (*FissionStack, error) {
 		return nil, err
 	}
 
-	stack := FissionStack{stackInfo: info, path: path, environment: spec.env}
+	stack := FissionStack{stackInfo: info, path: path, spec: spec}
 
-	for _, v := range spec.functions {
-		stack.Functions = append(stack.Functions, &v)
+	for _, v := range spec.Functions {
+		stack.Functions = append(stack.Functions, &v.Function)
 	}
 
 	return &stack, nil
@@ -87,16 +91,16 @@ func New(path string) (*FissionStack, error) {
 
 func (s *FissionStack) DeployStack() error {
 	_, _, err := utils.ExecCmd([]string{}, s.path,
-		"fission", "env", "create", "--name", s.environment.name, "--image", s.environment.image)
+		"fission", "env", "create", "--name", s.spec.Env.Name, "--image", s.spec.Env.Image)
 	if err != nil {
 		return err
 	}
 
-	for _, f := range s.Functions {
+	for _, f := range s.spec.Functions {
 		_, _, err = utils.ExecCmd([]string{}, s.path,
-			"fission", "fn", "create", "--name", f.Name, "--env", s.environment.name, "--code", f.Handler, "--executortype", "newdeploy",
-			"--mincpu", f.mincpu, "--maxcpu", f.maxcpu, "--minmemory", f.minmemory, "--maxmemory", f.MemorySize,
-			"--minscale", f.minscale, "--maxscale", f.maxscale, "--targetcpu", f.targetcpu)
+			"fission", "fn", "create", "--name", f.Name, "--env", s.spec.Env.Name, "--code", f.Handler, "--executortype", "newdeploy",
+			"--mincpu", f.Mincpu, "--maxcpu", f.Maxcpu, "--minmemory", f.Minmemory, "--maxmemory", f.MemorySize,
+			"--minscale", f.Minscale, "--maxscale", f.Maxscale, "--targetcpu", f.Targetcpu)
 		if err != nil {
 			return err
 		}
@@ -118,7 +122,7 @@ func (s *FissionStack) RemoveStack() error {
 	}
 
 	utils.ExecCmd([]string{}, s.path, "fission", "pkg", "delete", "--orphan")
-	utils.ExecCmd([]string{}, s.path, "fission", "env", "delete", "--name", s.environment.name)
+	utils.ExecCmd([]string{}, s.path, "fission", "env", "delete", "--name", s.spec.Env.Name)
 
 	return nil
 }

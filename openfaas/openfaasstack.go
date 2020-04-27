@@ -24,13 +24,17 @@ type Function struct {
 	Description string
 	Runtime     string `yaml:"lang"`
 	MemorySize  string
-	limits      Limit `yaml:"limits"`
 }
 
-type Functions map[string]Function
+type FunctionSpec struct {
+	Function `yaml:",inline"`
+	Limits   Limit `yaml:"limits"`
+}
+
+type Functions map[string]FunctionSpec
 
 type Service struct {
-	Functions Functions
+	Functions
 }
 
 type StackInfo struct {
@@ -73,8 +77,8 @@ func New(path string, gatewayUrl string) (*OpenFaaSStack, error) {
 
 	for k, v := range service.Functions {
 		v.Name = k
-		v.MemorySize = v.limits.Memory
-		stack.Functions = append(stack.Functions, &v)
+		v.MemorySize = v.Limits.Memory
+		stack.Functions = append(stack.Functions, &v.Function)
 	}
 
 	return &stack, nil
