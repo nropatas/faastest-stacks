@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"time"
 
 	"github.com/nropatas/faastest-stacks/utils"
 	"gopkg.in/yaml.v2"
@@ -111,6 +112,8 @@ func (s *FissionStack) DeployStack() error {
 			return err
 		}
 	}
+
+	time.Sleep(10 * time.Second)
 
 	return nil
 }
