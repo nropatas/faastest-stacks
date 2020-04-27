@@ -11,7 +11,7 @@ import (
 
 const (
 	stackFile = "stack.yaml"
-	envFile   = "fission.yml"
+	specFile  = "fission.yml"
 )
 
 type Function struct {
@@ -31,8 +31,12 @@ type Function struct {
 type Functions map[string]Function
 
 type Environment struct {
-	name      string `yaml:"name"`
-	image     string `yaml:"image"`
+	name  string `yaml:"name"`
+	image string `yaml:"image"`
+}
+
+type Spec struct {
+	env       Environment `yaml:"env"`
 	functions Functions
 }
 
@@ -61,20 +65,20 @@ func New(path string) (*FissionStack, error) {
 		return nil, err
 	}
 
-	envFileRaw, err := ioutil.ReadFile(filepath.Join(path, envFile))
+	specFileRaw, err := ioutil.ReadFile(filepath.Join(path, specFile))
 	if err != nil {
 		return nil, err
 	}
 
-	var env Environment
-	err = yaml.Unmarshal(envFileRaw, &env)
+	var spec Spec
+	err = yaml.Unmarshal(specFileRaw, &spec)
 	if err != nil {
 		return nil, err
 	}
 
-	stack := FissionStack{stackInfo: info, path: path, environment: env}
+	stack := FissionStack{stackInfo: info, path: path, environment: spec.env}
 
-	for _, v := range env.functions {
+	for _, v := range spec.functions {
 		stack.Functions = append(stack.Functions, &v)
 	}
 
