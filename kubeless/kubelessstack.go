@@ -34,8 +34,9 @@ type FunctionSpec struct {
 type Functions map[string]FunctionSpec
 
 type Spec struct {
-	Hostname string `yaml:"hostname"`
-	File     string `yaml:"file"`
+	Hostname     string `yaml:"hostname"`
+	File         string `yaml:"file"`
+	Dependencies string `yaml:"dependencies"`
 	Functions
 }
 
@@ -91,9 +92,14 @@ func (s *KubelessStack) DeployStack() error {
 	}
 
 	for _, f := range s.spec.Functions {
-		_, _, err = utils.ExecCmd([]string{}, s.path,
-			"kubeless", "function", "deploy", f.Name, "-r", f.Runtime, "-f", s.spec.File,
-			"--handler", f.Handler, "--cpu", f.CPU, "--memory", f.MemorySize)
+		deployArgs := []string{"function", "deploy", f.Name, "-r", f.Runtime, "-f", s.spec.File,
+			"--handler", f.Handler, "--cpu", f.CPU, "--memory", f.MemorySize}
+
+		if s.spec.Dependencies != "" {
+			deployArgs = append(deployArgs, "--dependencies", s.spec.Dependencies)
+		}
+
+		_, _, err = utils.ExecCmd([]string{}, s.path, "kubeless", deployArgs...)
 		if err != nil {
 			return err
 		}
