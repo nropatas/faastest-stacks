@@ -1,8 +1,10 @@
 package kubelessstack
 
 import (
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/nropatas/faastest-stacks/utils"
@@ -104,6 +106,18 @@ func (s *KubelessStack) DeployStack() error {
 			return err
 		}
 
+		// Check if the function is ready
+		stdout := ""
+		for strings.Compare(stdout, "True") != 0 {
+			time.Sleep(5 * time.Second)
+
+			stdout, _, err = utils.ExecCmd([]string{}, s.path,
+				"/bin/sh", "-c", fmt.Sprintf("kubectl get pods -l function=%s -o jsonpath='{.items[0].status.conditions[1].status}' --kubeconfig /app/kubeconfigs/kubeconfig_kubeless", f.Name))
+			if err != nil {
+				return err
+			}
+		}
+
 		_, _, err = utils.ExecCmd([]string{}, s.path,
 			"kubeless", "trigger", "http", "create", f.Name, "--function-name", f.Name, "--hostname", s.spec.Hostname,
 			"--path", f.Path)
@@ -119,7 +133,7 @@ func (s *KubelessStack) DeployStack() error {
 		}
 	}
 
-	time.Sleep(10 * time.Second)
+	time.Sleep(5 * time.Second)
 
 	return nil
 }
