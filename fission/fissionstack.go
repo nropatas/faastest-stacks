@@ -91,7 +91,12 @@ func New(path string) (*FissionStack, error) {
 }
 
 func (s *FissionStack) DeployStack() error {
-	_, _, err := utils.ExecCmd([]string{}, s.path,
+	_, _, err := utils.ExecCmd([]string{}, s.path, "npm", "i")
+	if err != nil {
+		return err
+	}
+
+	_, _, err = utils.ExecCmd([]string{}, s.path,
 		"fission", "env", "create", "--name", s.spec.Env.Name, "--image", s.spec.Env.Image)
 	if err != nil {
 		return err

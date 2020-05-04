@@ -85,8 +85,13 @@ func New(path string) (*KubelessStack, error) {
 }
 
 func (s *KubelessStack) DeployStack() error {
+	_, _, err := utils.ExecCmd([]string{}, s.path, "npm", "i")
+	if err != nil {
+		return err
+	}
+
 	for _, f := range s.spec.Functions {
-		_, _, err := utils.ExecCmd([]string{}, s.path,
+		_, _, err = utils.ExecCmd([]string{}, s.path,
 			"kubeless", "function", "deploy", f.Name, "-r", f.Runtime, "-f", s.spec.File,
 			"--handler", f.Handler, "--cpu", f.CPU, "--memory", f.MemorySize)
 		if err != nil {
