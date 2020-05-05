@@ -2,8 +2,6 @@ package utils
 
 import (
 	"bytes"
-	"errors"
-	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -11,7 +9,6 @@ import (
 
 func ExecCmd(env []string, dir string, bin string, command ...string) (string, string, error) {
 	var stdoutBuf, stderrBuf bytes.Buffer
-	var errStdout, errStderr error
 
 	cwd := dir
 
@@ -22,28 +19,16 @@ func ExecCmd(env []string, dir string, bin string, command ...string) (string, s
 		cmd.Env = append(cmd.Env, envVar)
 	}
 
-	stdoutIn, _ := cmd.StdoutPipe()
-	stderrIn, _ := cmd.StderrPipe()
+	cmd.Stdout = &stdoutBuf
+	cmd.Stderr = &stderrBuf
 
-	stdout := io.MultiWriter(os.Stdout, &stdoutBuf)
-	stderr := io.MultiWriter(os.Stderr, &stderrBuf)
-	err := cmd.Start()
+	err := cmd.Run()
 	if err != nil {
 		return "", "", err
 	}
 
-	go func() {
-		_, errStdout = io.Copy(stdout, stdoutIn)
-	}()
-
-	go func() {
-		_, errStderr = io.Copy(stderr, stderrIn)
-	}()
-
-	err = cmd.Wait()
-	if errStdout != nil || errStderr != nil {
-		return "", "", errors.New("failed to capture stdout or stderr")
-	}
+	os.Stdout.WriteString(stdoutBuf.String())
+	os.Stderr.WriteString(stderrBuf.String())
 
 	return strings.TrimSpace(stdoutBuf.String()), strings.TrimSpace(stderrBuf.String()), err
 }
