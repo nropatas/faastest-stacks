@@ -1,6 +1,7 @@
 package knativestack
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
@@ -30,7 +31,6 @@ type Function struct {
 	Description string
 	Runtime     string
 	MemorySize  string
-	dirName     string
 }
 
 type StackInfo struct {
@@ -43,6 +43,19 @@ type KnativeStack struct {
 	stackInfo StackInfo
 	path      string
 	Functions []*Function
+}
+
+func isAllTrue(s []bool) bool {
+	if len(s) < 1 {
+		return false
+	}
+
+	out := true
+	for _, i := range s {
+		out = out && i
+	}
+
+	return out
 }
 
 func New(path string) (*KnativeStack, error) {
@@ -59,46 +72,42 @@ func New(path string) (*KnativeStack, error) {
 
 	stack := KnativeStack{stackInfo: info, path: path}
 
-	functions, _ := ioutil.ReadDir(path)
-	for _, function := range functions {
-		if function.IsDir() {
-			file, err := ioutil.ReadFile(filepath.Join(path, function.Name(), kserviceFile))
-			if err != nil {
-				return nil, err
-			}
+	kserviceFileRaw, err := ioutil.ReadFile(filepath.Join(path, kserviceFile))
+	if err != nil {
+		return nil, err
+	}
 
-			var service Kservice
-			err = yaml.Unmarshal(file, &service)
-			if err != nil {
-				return nil, err
-			}
+	reader := bytes.NewReader(kserviceFileRaw)
+	decoder := yaml.NewDecoder(reader)
 
-			stack.Functions = append(stack.Functions, &Function{Name: service.Meta.Name, dirName: function.Name()})
-		}
+	var ksvc Kservice
+	for decoder.Decode(&ksvc) == nil {
+		stack.Functions = append(stack.Functions, &Function{Name: ksvc.Meta.Name})
 	}
 
 	return &stack, nil
 }
 
 func (s *KnativeStack) DeployStack() error {
-	for _, function := range s.Functions {
-		// Deploy the function
-		_, _, err := utils.ExecCmd([]string{}, filepath.Join(s.path, function.dirName),
-			"/bin/sh", "-c", fmt.Sprintf("kubectl apply -f %s --kubeconfig /app/kubeconfigs/kubeconfig_knative", kserviceFile))
-		if err != nil {
-			return err
-		}
+	_, _, err := utils.ExecCmd([]string{}, s.path,
+		"/bin/sh", "-c", fmt.Sprintf("kubectl apply -f %s --kubeconfig /app/kubeconfigs/kubeconfig_knative", kserviceFile))
+	if err != nil {
+		return err
+	}
 
-		// Check if the function is ready
-		stdout := ""
-		for strings.Compare(stdout, "True") != 0 {
-			time.Sleep(5 * time.Second)
+	// Check if all functions are ready
+	funcStatuses := make([]bool, len(s.Functions))
+	for !isAllTrue(funcStatuses) {
+		time.Sleep(5 * time.Second)
 
-			stdout, _, err = utils.ExecCmd([]string{}, s.path,
-				"/bin/sh", "-c", fmt.Sprintf("kubectl get ksvc %s -o jsonpath='{.status.conditions[1].status}' --kubeconfig /app/kubeconfigs/kubeconfig_knative", function.Name))
+		for i, f := range s.Functions {
+			stdout, _, err := utils.ExecCmd([]string{}, s.path,
+				"/bin/sh", "-c", fmt.Sprintf("kubectl get ksvc %s -o jsonpath='{.status.conditions[1].status}' --kubeconfig /app/kubeconfigs/kubeconfig_knative", f.Name))
 			if err != nil {
 				return err
 			}
+
+			funcStatuses[i] = strings.Compare(stdout, "True") == 0
 		}
 	}
 
@@ -106,12 +115,10 @@ func (s *KnativeStack) DeployStack() error {
 }
 
 func (s *KnativeStack) RemoveStack() error {
-	for _, function := range s.Functions {
-		_, _, err := utils.ExecCmd([]string{}, filepath.Join(s.path, function.dirName),
-			"/bin/sh", "-c", fmt.Sprintf("kubectl delete -f %s --kubeconfig /app/kubeconfigs/kubeconfig_knative", kserviceFile))
-		if err != nil {
-			return err
-		}
+	_, _, err := utils.ExecCmd([]string{}, s.path,
+		"/bin/sh", "-c", fmt.Sprintf("kubectl delete -f %s --kubeconfig /app/kubeconfigs/kubeconfig_knative", kserviceFile))
+	if err != nil {
+		return err
 	}
 
 	return nil
