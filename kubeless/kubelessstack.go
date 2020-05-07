@@ -31,6 +31,7 @@ type FunctionSpec struct {
 	MinScale  string `yaml:"min-scale"`
 	MaxScale  string `yaml:"max-scale"`
 	TargetCPU string `yaml:"target-cpu"`
+	Env       string `yaml:"env"`
 }
 
 type Functions map[string]FunctionSpec
@@ -99,6 +100,10 @@ func (s *KubelessStack) DeployStack() error {
 
 		if s.spec.Dependencies != "" {
 			deployArgs = append(deployArgs, "--dependencies", s.spec.Dependencies)
+		}
+
+		if f.Env != "" {
+			deployArgs = append(deployArgs, "--env", f.Env)
 		}
 
 		_, _, err = utils.ExecCmd([]string{}, s.path, "kubeless", deployArgs...)
