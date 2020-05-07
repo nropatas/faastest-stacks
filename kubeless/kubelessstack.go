@@ -25,14 +25,15 @@ const (
 )
 
 type FunctionSpec struct {
-	Function  `yaml:",inline"`
-	Path      string `yaml:"path"`
-	CPU       string `yaml:"cpu"`
-	MinScale  string `yaml:"min-scale"`
-	MaxScale  string `yaml:"max-scale"`
-	TargetCPU string `yaml:"target-cpu"`
-	Env       string `yaml:"env"`
-	File      string `yaml:"file"`
+	Function      `yaml:",inline"`
+	Path          string `yaml:"path"`
+	CPU           string `yaml:"cpu"`
+	MinScale      string `yaml:"min-scale"`
+	MaxScale      string `yaml:"max-scale"`
+	TargetCPU     string `yaml:"target-cpu"`
+	Env           string `yaml:"env"`
+	File          string `yaml:"file"`
+	Dependencties string `yaml:"dependencies"`
 }
 
 type Functions map[string]FunctionSpec
@@ -104,8 +105,13 @@ func (s *KubelessStack) DeployStack() error {
 		deployArgs := []string{"function", "deploy", f.Name, "-r", f.Runtime, "-f", handlerFile,
 			"--handler", f.Handler, "--cpu", f.CPU, "--memory", f.MemorySize}
 
-		if s.spec.Dependencies != "" {
-			deployArgs = append(deployArgs, "--dependencies", s.spec.Dependencies)
+		dependencies := s.spec.Dependencies
+		if f.Dependencties != "" {
+			dependencies = f.Dependencties
+		}
+
+		if dependencies != "" {
+			deployArgs = append(deployArgs, "--dependencies", dependencies)
 		}
 
 		if f.Env != "" {
