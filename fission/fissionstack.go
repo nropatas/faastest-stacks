@@ -35,14 +35,20 @@ type FunctionSpec struct {
 
 type Functions map[string]FunctionSpec
 
-type Environment struct {
+type EnvSpec struct {
 	Name  string `yaml:"name"`
 	Image string `yaml:"image"`
 }
 
-type Spec struct {
-	Env Environment `yaml:"env"`
+type Env struct {
+	Env EnvSpec `yaml:"env"`
 	Functions
+}
+
+type Envs map[string]Env
+
+type Spec struct {
+	Envs
 }
 
 type StackInfo struct {
@@ -83,8 +89,10 @@ func New(path string) (*FissionStack, error) {
 
 	stack := FissionStack{stackInfo: info, path: path, spec: spec}
 
-	for _, v := range spec.Functions {
-		stack.Functions = append(stack.Functions, &v.Function)
+	for _, env := range spec.Envs {
+		for _, f := range env.Functions {
+			stack.Functions = append(stack.Functions, &f.Function)
+		}
 	}
 
 	return &stack, nil
@@ -96,25 +104,27 @@ func (s *FissionStack) DeployStack() error {
 		return err
 	}
 
-	_, _, err = utils.ExecCmd([]string{}, s.path,
-		"fission", "env", "create", "--name", s.spec.Env.Name, "--image", s.spec.Env.Image)
-	if err != nil {
-		return err
-	}
-
-	for _, f := range s.spec.Functions {
+	for _, env := range s.spec.Envs {
 		_, _, err = utils.ExecCmd([]string{}, s.path,
-			"fission", "fn", "create", "--name", f.Name, "--env", s.spec.Env.Name, "--code", f.Handler, "--executortype", "newdeploy",
-			"--mincpu", f.Mincpu, "--maxcpu", f.Maxcpu, "--minmemory", f.Minmemory, "--maxmemory", f.MemorySize,
-			"--minscale", f.Minscale, "--maxscale", f.Maxscale, "--targetcpu", f.Targetcpu)
+			"fission", "env", "create", "--name", env.Env.Name, "--image", env.Env.Image)
 		if err != nil {
 			return err
 		}
 
-		_, _, err = utils.ExecCmd([]string{}, s.path,
-			"fission", "route", "create", "--method", "POST", "--url", fmt.Sprintf("/%s", f.Name), "--function", f.Name, "--name", f.Name)
-		if err != nil {
-			return err
+		for _, f := range env.Functions {
+			_, _, err = utils.ExecCmd([]string{}, s.path,
+				"fission", "fn", "create", "--name", f.Name, "--env", env.Env.Name, "--code", f.Handler, "--executortype", "newdeploy",
+				"--mincpu", f.Mincpu, "--maxcpu", f.Maxcpu, "--minmemory", f.Minmemory, "--maxmemory", f.MemorySize,
+				"--minscale", f.Minscale, "--maxscale", f.Maxscale, "--targetcpu", f.Targetcpu)
+			if err != nil {
+				return err
+			}
+
+			_, _, err = utils.ExecCmd([]string{}, s.path,
+				"fission", "route", "create", "--method", "POST", "--url", fmt.Sprintf("/%s", f.Name), "--function", f.Name, "--name", f.Name)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -130,7 +140,10 @@ func (s *FissionStack) RemoveStack() error {
 	}
 
 	utils.ExecCmd([]string{}, s.path, "fission", "pkg", "delete", "--orphan")
-	utils.ExecCmd([]string{}, s.path, "fission", "env", "delete", "--name", s.spec.Env.Name)
+
+	for _, env := range s.spec.Envs {
+		utils.ExecCmd([]string{}, s.path, "fission", "env", "delete", "--name", env.Env.Name)
+	}
 
 	return nil
 }
