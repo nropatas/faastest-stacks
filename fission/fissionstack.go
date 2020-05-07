@@ -36,8 +36,9 @@ type FunctionSpec struct {
 type Functions map[string]FunctionSpec
 
 type EnvSpec struct {
-	Name  string `yaml:"name"`
-	Image string `yaml:"image"`
+	Name    string `yaml:"name"`
+	Image   string `yaml:"image"`
+	Builder string `yaml:"builder"`
 }
 
 type Env struct {
@@ -105,8 +106,13 @@ func (s *FissionStack) DeployStack() error {
 	}
 
 	for _, env := range s.spec.Envs {
-		_, _, err = utils.ExecCmd([]string{}, s.path,
-			"fission", "env", "create", "--name", env.Env.Name, "--image", env.Env.Image)
+		envArgs := []string{"env", "create", "--name", env.Env.Name, "--image", env.Env.Image}
+
+		if env.Env.Builder != "" {
+			envArgs = append(envArgs, "--builder", env.Env.Builder)
+		}
+
+		_, _, err = utils.ExecCmd([]string{}, s.path, "fission", envArgs...)
 		if err != nil {
 			return err
 		}
