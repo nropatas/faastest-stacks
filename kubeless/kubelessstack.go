@@ -32,6 +32,7 @@ type FunctionSpec struct {
 	MaxScale  string `yaml:"max-scale"`
 	TargetCPU string `yaml:"target-cpu"`
 	Env       string `yaml:"env"`
+	File      string `yaml:"file"`
 }
 
 type Functions map[string]FunctionSpec
@@ -95,7 +96,12 @@ func (s *KubelessStack) DeployStack() error {
 	}
 
 	for _, f := range s.spec.Functions {
-		deployArgs := []string{"function", "deploy", f.Name, "-r", f.Runtime, "-f", s.spec.File,
+		handlerFile := s.spec.File
+		if f.File != "" {
+			handlerFile = f.File
+		}
+
+		deployArgs := []string{"function", "deploy", f.Name, "-r", f.Runtime, "-f", handlerFile,
 			"--handler", f.Handler, "--cpu", f.CPU, "--memory", f.MemorySize}
 
 		if s.spec.Dependencies != "" {
