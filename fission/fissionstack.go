@@ -24,13 +24,14 @@ type Function struct {
 }
 
 type FunctionSpec struct {
-	Function  `yaml:",inline"`
-	Minmemory string `yaml:"minmemory"`
-	Mincpu    string `yaml:"mincpu"`
-	Maxcpu    string `yaml:"maxcpu"`
-	Minscale  string `yaml:"minscale"`
-	Maxscale  string `yaml:"maxscale"`
-	Targetcpu string `yaml:"targetcpu"`
+	Function   `yaml:",inline"`
+	Entrypoint string `yaml:"entrypoint"`
+	Minmemory  string `yaml:"minmemory"`
+	Mincpu     string `yaml:"mincpu"`
+	Maxcpu     string `yaml:"maxcpu"`
+	Minscale   string `yaml:"minscale"`
+	Maxscale   string `yaml:"maxscale"`
+	Targetcpu  string `yaml:"targetcpu"`
 }
 
 type Functions map[string]FunctionSpec
@@ -118,10 +119,19 @@ func (s *FissionStack) DeployStack() error {
 		}
 
 		for _, f := range env.Functions {
-			_, _, err = utils.ExecCmd([]string{}, s.path,
-				"fission", "fn", "create", "--name", f.Name, "--env", env.Env.Name, "--code", f.Handler, "--executortype", "newdeploy",
+			fnArgs := []string{"fn", "create", "--name", f.Name, "--env", env.Env.Name}
+
+			if f.Entrypoint == "" {
+				fnArgs = append(fnArgs, "--code", f.Handler)
+			} else {
+				fnArgs = append(fnArgs, "--src", f.Handler, "--entrypoint", f.Entrypoint)
+			}
+
+			fnArgs = append(fnArgs, "--executortype", "newdeploy",
 				"--mincpu", f.Mincpu, "--maxcpu", f.Maxcpu, "--minmemory", f.Minmemory, "--maxmemory", f.MemorySize,
 				"--minscale", f.Minscale, "--maxscale", f.Maxscale, "--targetcpu", f.Targetcpu)
+
+			_, _, err = utils.ExecCmd([]string{}, s.path, "fission", fnArgs...)
 			if err != nil {
 				return err
 			}
