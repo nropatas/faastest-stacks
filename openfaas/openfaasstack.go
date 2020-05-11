@@ -1,6 +1,7 @@
 package openfaasstack
 
 import (
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"time"
@@ -18,6 +19,12 @@ type Limit struct {
 	Memory string `yaml:"memory"`
 }
 
+type Autoscaling struct {
+	Min       string `yaml:"min"`
+	Max       string `yaml:"max"`
+	TargetCPU string `yaml:"target-cpu"`
+}
+
 type Function struct {
 	Name        string
 	Handler     string `yaml:"handler"`
@@ -27,8 +34,9 @@ type Function struct {
 }
 
 type FunctionSpec struct {
-	Function `yaml:",inline"`
-	Limits   Limit `yaml:"limits"`
+	Function     `yaml:",inline"`
+	Limits       Limit `yaml:"limits"`
+	*Autoscaling `yaml:"autoscaling"`
 }
 
 type Functions map[string]FunctionSpec
@@ -47,6 +55,7 @@ type OpenFaaSStack struct {
 	stackInfo  StackInfo
 	path       string
 	gatewayUrl string
+	service    Service
 	Functions  []*Function
 }
 
@@ -62,8 +71,6 @@ func New(path string, gatewayUrl string) (*OpenFaaSStack, error) {
 		return nil, err
 	}
 
-	stack := OpenFaaSStack{stackInfo: info, path: path, gatewayUrl: gatewayUrl}
-
 	serviceFileRaw, err := ioutil.ReadFile(filepath.Join(path, serviceFile))
 	if err != nil {
 		return nil, err
@@ -74,6 +81,8 @@ func New(path string, gatewayUrl string) (*OpenFaaSStack, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	stack := OpenFaaSStack{stackInfo: info, path: path, gatewayUrl: gatewayUrl, service: service}
 
 	for k, v := range service.Functions {
 		v.Name = k
@@ -89,6 +98,16 @@ func (s *OpenFaaSStack) DeployStack() error {
 		"faas-cli", "deploy", "-g", s.gatewayUrl, "-f", serviceFile)
 	if err != nil {
 		return err
+	}
+
+	for _, f := range s.service.Functions {
+		if f.Autoscaling != nil {
+			_, _, err = utils.ExecCmd([]string{}, s.path,
+				"/bin/sh", "-c", fmt.Sprintf("kubectl autoscale deployment -n openfaas-fn %s --cpu-percent %s --min %s --max %s --kubeconfig /app/kubeconfigs/kubeconfig_openfaas", f.Name, f.TargetCPU, f.Min, f.Max))
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	time.Sleep(10 * time.Second)
