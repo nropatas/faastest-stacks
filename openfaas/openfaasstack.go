@@ -122,6 +122,16 @@ func (s *OpenFaaSStack) RemoveStack() error {
 		return err
 	}
 
+	for _, f := range s.service.Functions {
+		if f.Autoscaling != nil {
+			_, _, err = utils.ExecCmd([]string{}, s.path,
+				"/bin/sh", "-c", fmt.Sprintf("kubectl delete hpa -n openfaas-fn %s --kubeconfig /app/kubeconfigs/kubeconfig_openfaas", f.Name))
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	return nil
 }
 
