@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/nropatas/faastest-stacks/utils"
@@ -140,6 +141,18 @@ func (s *FissionStack) DeployStack() error {
 				"fission", "route", "create", "--method", "POST", "--url", fmt.Sprintf("/%s", f.Name), "--function", f.Name, "--name", f.Name)
 			if err != nil {
 				return err
+			}
+
+			// Check for readiness
+			stdout := ""
+			for strings.Compare(stdout, "True") != 0 {
+				time.Sleep(5 * time.Second)
+
+				stdout, _, err = utils.ExecCmd([]string{}, s.path,
+					"/bin/sh", "-c", fmt.Sprintf("kubectl get deploy -n fission-function -l 'functionName=%s' -o jsonpath='{.items[0].status.conditions[0].status}' --kubeconfig /app/kubeconfigs/kubeconfig_fission", f.Name))
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
