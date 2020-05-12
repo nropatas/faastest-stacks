@@ -94,7 +94,13 @@ func (s *KnativeStack) DeployStack() error {
 				return err
 			}
 
-			funcStatuses[i] = strings.Compare(stdout, "True") == 0
+			isReady := strings.Compare(stdout, "True") == 0
+			funcStatuses[i] = isReady
+
+			// Don't check more functions. Continue waiting right away.
+			if !isReady {
+				break
+			}
 		}
 	}
 
