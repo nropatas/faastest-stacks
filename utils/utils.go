@@ -32,3 +32,16 @@ func ExecCmd(env []string, dir string, bin string, command ...string) (string, s
 
 	return strings.TrimSpace(stdoutBuf.String()), strings.TrimSpace(stderrBuf.String()), err
 }
+
+func IsAllTrue(s []bool) bool {
+	if len(s) < 1 {
+		return false
+	}
+
+	out := true
+	for _, i := range s {
+		out = out && i
+	}
+
+	return out
+}

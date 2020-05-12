@@ -45,19 +45,6 @@ type KnativeStack struct {
 	Functions []*Function
 }
 
-func isAllTrue(s []bool) bool {
-	if len(s) < 1 {
-		return false
-	}
-
-	out := true
-	for _, i := range s {
-		out = out && i
-	}
-
-	return out
-}
-
 func New(path string) (*KnativeStack, error) {
 	stackInfoFile, err := ioutil.ReadFile(filepath.Join(path, stackFile))
 	if err != nil {
@@ -97,7 +84,7 @@ func (s *KnativeStack) DeployStack() error {
 
 	// Check if all functions are ready
 	funcStatuses := make([]bool, len(s.Functions))
-	for !isAllTrue(funcStatuses) {
+	for !utils.IsAllTrue(funcStatuses) {
 		time.Sleep(5 * time.Second)
 
 		for i, f := range s.Functions {
