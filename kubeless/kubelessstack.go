@@ -129,7 +129,7 @@ func (s *KubelessStack) DeployStack() error {
 			time.Sleep(5 * time.Second)
 
 			stdout, _, err = utils.ExecCmd([]string{}, s.path,
-				"/bin/sh", "-c", fmt.Sprintf("kubectl get pods -l function=%s -o jsonpath='{.items[0].status.conditions[1].status}' --kubeconfig /app/kubeconfigs/kubeconfig_kubeless", f.Name))
+				"/bin/sh", "-c", fmt.Sprintf("kubectl get deploy %s -o jsonpath='{.status.conditions[0].status}' --kubeconfig /app/kubeconfigs/kubeconfig_kubeless", f.Name))
 			if err != nil {
 				return err
 			}
