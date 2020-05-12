@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/nropatas/faastest-stacks/utils"
@@ -110,7 +111,27 @@ func (s *OpenFaaSStack) DeployStack() error {
 		}
 	}
 
-	time.Sleep(10 * time.Second)
+	// Check if all functions are ready
+	funcStatuses := make([]bool, len(s.Functions))
+	for !utils.IsAllTrue(funcStatuses) {
+		time.Sleep(5 * time.Second)
+
+		for i, f := range s.Functions {
+			stdout, _, err := utils.ExecCmd([]string{}, s.path,
+				"faas-cli", "describe", "-g", s.gatewayUrl, f.Name)
+			if err != nil {
+				return err
+			}
+
+			isReady := !strings.Contains(stdout, "Not Ready")
+			funcStatuses[i] = isReady
+
+			// Don't check more functions. Continue waiting right away.
+			if !isReady {
+				break
+			}
+		}
+	}
 
 	return nil
 }
