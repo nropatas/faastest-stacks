@@ -88,7 +88,12 @@ func New(path string, gatewayUrl string) (*OpenFaaSStack, error) {
 	for k, v := range service.Functions {
 		v.Name = k
 		v.MemorySize = v.Limits.Memory
-		stack.Functions = append(stack.Functions, &v.Function)
+		stack.Functions = append(stack.Functions, &Function{
+			Name:        v.Name,
+			Description: v.Description,
+			Handler:     v.Handler,
+			Runtime:     v.Runtime,
+			MemorySize:  v.MemorySize})
 	}
 
 	return &stack, nil

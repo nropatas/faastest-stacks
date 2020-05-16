@@ -94,7 +94,12 @@ func New(path string) (*FissionStack, error) {
 
 	for _, env := range spec.Envs {
 		for _, f := range env.Functions {
-			stack.Functions = append(stack.Functions, &f.Function)
+			stack.Functions = append(stack.Functions, &Function{
+				Name:        f.Name,
+				Description: f.Description,
+				Handler:     f.Handler,
+				Runtime:     f.Runtime,
+				MemorySize:  f.MemorySize})
 		}
 	}
 

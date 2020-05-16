@@ -83,8 +83,13 @@ func New(path string) (*KubelessStack, error) {
 
 	stack := KubelessStack{stackInfo: info, path: path, spec: spec}
 
-	for _, v := range spec.Functions {
-		stack.Functions = append(stack.Functions, &v.Function)
+	for _, f := range spec.Functions {
+		stack.Functions = append(stack.Functions, &Function{
+			Name:        f.Name,
+			Description: f.Description,
+			Handler:     f.Handler,
+			Runtime:     f.Runtime,
+			MemorySize:  f.MemorySize})
 	}
 
 	return &stack, nil
