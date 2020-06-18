@@ -142,7 +142,7 @@ func (s *OpenFaaSStack) DeployStack() error {
 }
 
 func (s *OpenFaaSStack) RemoveStack() error {
-	time.Sleep(1 * time.Minute)
+	time.Sleep(5 * time.Minute)
 
 	_, _, err := utils.ExecCmd([]string{}, s.path,
 		"faas-cli", "remove", "-g", s.gatewayUrl, "-f", serviceFile)
